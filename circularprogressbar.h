@@ -5,8 +5,10 @@
 #include <QPainter>
 #include <QPaintEvent>
 #include <QPainterPath>
+#include <QTimer>
 #include <QLinearGradient>
 #include <algorithm>
+#include <cmath>
 #include <stdexcept>
 
 class CircularProgressBar final : public QWidget
@@ -38,7 +40,6 @@ signals:
     void valueChanged(int nval);
 
 protected:
-    void timerEvent(QTimerEvent *te) override;
     void paintEvent(QPaintEvent *pe) override;
 
 private:
@@ -65,9 +66,6 @@ private:
         const QRect &rect
     );
 
-    void startAnimationTimer();
-    void startAnimationMovieTimer();
-
 private:
     int min_, max_;
     int value_;
@@ -75,8 +73,7 @@ private:
 
     bool animationEnabled_{false};
     bool animationMovieToDraw_;
-    int animationTimerId_;
-    int animationMovieTimerId_;
+    QTimer *animationTimer_, *animationMovieTimer_;
     qreal animationOffsetAngle_{0};
 };
 #endif // CIRCULARPROGRESSBAR_H

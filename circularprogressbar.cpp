@@ -3,7 +3,26 @@
 CircularProgressBar::CircularProgressBar(QWidget *parent)
     : QWidget(parent)
 {
-    startAnimationTimer();
+    animationTimer_ = new QTimer(this);
+    animationTimer_->setTimerType(Qt::TimerType::VeryCoarseTimer);
+    animationTimer_->setInterval(1000);
+    connect(animationTimer_, &QTimer::timeout, this, [&](){
+        if (!animationEnabled_) {
+            animationEnabled_ = true;
+            animationMovieTimer_->start();
+        }
+    });
+
+    animationMovieTimer_ = new QTimer(this);
+    animationMovieTimer_->setTimerType(Qt::TimerType::PreciseTimer);
+    animationMovieTimer_->setInterval(5);
+    connect(animationMovieTimer_, &QTimer::timeout, this, [&]() {
+        animationMovieToDraw_ = true;
+        repaint();
+        animationMovieToDraw_ = false;
+    });
+
+    animationTimer_->start();
 }
 
 int CircularProgressBar::minimum() const noexcept {
@@ -64,20 +83,6 @@ void CircularProgressBar::setRange(int nmin, int nmax) {
 CircularProgressBar::~CircularProgressBar()
 { }
 
-void CircularProgressBar::timerEvent(QTimerEvent *te)  {
-    if (te->timerId() == animationTimerId_ && !animationEnabled_) {
-        animationEnabled_ = true;
-        startAnimationMovieTimer();
-        return;
-    }
-
-    if (te->timerId() == animationMovieTimerId_) {
-        animationMovieToDraw_ = true;
-        repaint();
-        animationMovieToDraw_ = false;
-    }
-}
-
 void CircularProgressBar::paintEvent(QPaintEvent *pe) {
     Q_UNUSED(pe);
 
@@ -122,12 +127,12 @@ void CircularProgressBar::paintEvent(QPaintEvent *pe) {
             path = markUpAnnularSpace(exRect, inRect, 0, animationOffsetAngle_);
             p.fillPath(path, createMovieBrush(exRect, animationOffsetAngle_));
             animationOffsetAngle_ += 2;
-            startAnimationMovieTimer();
+            animationMovieTimer_->start();
         }
         else {
             animationOffsetAngle_ = 0;
             animationEnabled_ = false;
-            startAnimationTimer();
+            animationTimer_->start();
         }
     }
 }
@@ -237,12 +242,4 @@ QFont CircularProgressBar::adjustFontToRect(
     }
     cur.setPointSize(l);
     return cur;
-}
-
-void CircularProgressBar::startAnimationTimer() {
-    animationTimerId_ = startTimer(1000, Qt::TimerType::VeryCoarseTimer);
-}
-
-void CircularProgressBar::startAnimationMovieTimer() {
-    animationMovieTimerId_ = startTimer(5, Qt::TimerType::PreciseTimer);
 }
